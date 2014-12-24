@@ -13,6 +13,7 @@ struct BOOTINFO { /* 0x0ff0-0x0fff */
 void io_hlt(void);
 void io_cli(void);
 void io_sti(void);
+void io_stihlt(void);
 int io_in8(int port);
 void io_out8(int port, int data);
 int io_load_eflags(void);
@@ -21,6 +22,16 @@ void load_gdtr(int limit, int addr);
 void load_idtr(int limit, int addr);
 void asm_inthandler21(void);
 void asm_inthandler2c(void);
+
+/* fifo.c */
+struct FIFO8 {
+	unsigned char *buf;
+	int p, q, size, free, flags;
+};
+void fifo8_init(struct FIFO8 *fifo, int size, unsigned char *buf);
+int fifo8_put(struct FIFO8 *fifo, unsigned char data);
+int fifo8_get(struct FIFO8 *fifo);
+int fifo8_status(struct FIFO8 *fifo);
 
 /* graphic.c */
 void init_palette(void);
@@ -74,11 +85,6 @@ void set_gatedesc(struct GATE_DESCRIPTOR *gd, int offset, int selector, int ar);
 #define AR_INTGATE32	0x008e
 
 /* int.c */
-struct KEYBUF {
-	unsigned char data[32];
-	int next_r, next_w, len;
-};
-
 void init_pic(void);
 void inthandler21(int *esp);
 void inthandler2c(int *esp);
