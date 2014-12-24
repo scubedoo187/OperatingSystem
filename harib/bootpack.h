@@ -1,8 +1,8 @@
 /* asmhead.nas */
 struct BOOTINFO { /* 0x0ff0-0x0fff */
-	char cyls; /* ブートセクタはどこまでディスクを読んだのか */
-	char leds; /* ブート時のキーボードのLEDの状態 */
-	char vmode; /* ビデオモード  何ビットカラーか */
+	char cyls; /* ブ?トセク?はどこまでディスクを読んだのか */
+	char leds; /* ブ?ト時のキ???ドのLEDの状態 */
+	char vmode; /* ビデオモ?ド  何ビットカラ?か */
 	char reserve;
 	short scrnx, scrny; /* 画面解像度 */
 	char *vram;
@@ -74,6 +74,11 @@ void set_gatedesc(struct GATE_DESCRIPTOR *gd, int offset, int selector, int ar);
 #define AR_INTGATE32	0x008e
 
 /* int.c */
+struct KEYBUF {
+	unsigned char data[32];
+	int next;
+};
+
 void init_pic(void);
 void inthandler21(int *esp);
 void inthandler2c(int *esp);
