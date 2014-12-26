@@ -5,6 +5,7 @@
 
 struct MOUSE_DEC {
 	unsigned char buf[3], phase;
+	int x, y, btn;
 };
 
 extern struct FIFO8 keyfifo;
@@ -58,8 +59,17 @@ void HariMain(void)
 				io_sti();
 				if (mouse_decode(&mdec, i) != 0) {
 					/* 데이터가 3바이트 모였으므로 표시 */
-					sprintf(s, "%02X %02X %02X", mdec.buf[0], mdec.buf[1], mdec.buf[2]);
-					boxfill8(binfo->vram, binfo->scrnx, COL8_008484, 32, 16, 32 + 8 * 8 - 1, 31);
+					sprintf(s, "[lcr %4d %4d]", mdec.x, mdec.y);
+					if ((mdec.btn & 0x01) != 0) {
+						s[1] = 'L';							
+					}
+					if ((mdec.btn & 0x02) != 0) {
+						s[3] = 'R';
+					}
+					if ((mdec.btn & 0x04) != 0) {
+						s[2] = 'C';
+					}
+					boxfill8(binfo->vram, binfo->scrnx, COL8_008484, 32, 16, 32 + 15 * 8 - 1, 31);
 					putfonts8_asc(binfo->vram, binfo->scrnx, 32, 16, COL8_FFFFFF, s);
 				}
 			}
@@ -119,21 +129,34 @@ int mouse_decode(struct MOUSE_DEC *mdec, unsigned char dat)
 		return 0;
 	}
 	if (mdec->phase == 1) {
-		/* 마우스의 1바이트째를 기다리고 있는 단계 */
-		mdec->buf[0] = dat;
-		mdec->phase = 2;
+		/* 마우스로부터 총 1바이트를 받은 단계 */
+		if ((dat & 0xc8) == 0x08) {
+			/* 1바이트 째 였다. */
+			mdec->buf[0] = dat;
+			mdec->phase = 2;
+		}
 		return 0;
 	}
 	if (mdec->phase == 2) {
-		/* 마우스의 2바이트째를 기다리고 있는 단계 */
+		/* 마우스로부터 총 2바이트를 받은 단계 */
 		mdec->buf[1] = dat;
 		mdec->phase = 3;
 		return 0;
 	}
 	if (mdec->phase == 3) {
-		/* 마우스의 3바이트째를 기다리고 있는 단계 */
+		/* 마우스로부터 총 3바이트를 받은 단계 */
 		mdec->buf[2] = dat;
 		mdec->phase = 1;
+		mdec->btn = mdec->buf[0] & 0x07;
+		mdec->x = mdec->buf[1];
+		mdec->y = mdec->buf[2];
+		if ((mdec->buf[0] & 0x10) != 0) {
+			mdec->x |= 0xffffff00;
+		}
+		if ((mdec->buf[0] & 0x20) != 0) {
+			mdec->y |= 0xffffff00;
+		}
+		mdec->y = -mdec->y;	/* 마우스에서는 y방향의 부호가 화면과 반대 */
 		return 1;
 	}
 	return -1; /* 여기로 오면 안됨 */
