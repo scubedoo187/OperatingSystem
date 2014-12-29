@@ -17,7 +17,7 @@ VRAM	EQU		0x0ff8			; 그래픽 버퍼의 개시 번지
 
 ; 화면 모드를 설정
 
-		MOV		AL, 0x13	; VGA 그래픽스, 320 x200x8bit 칼라
+		MOV		AL, 0x13	; VGA 그래픽스, 320x200x8bit 칼라
 		MOV		AH,0x00
 		INT		0x10
 		MOV		BYTE [VMODE], 8	; 화면 모드를 메모 한다(C언어가 참조한다)
@@ -106,7 +106,7 @@ pipelineflush:
 		MOV		ECX,[EBX+16]
 		ADD		ECX, 3		; ECX += 3;
 		SHR		ECX, 2		; ECX /= 4;
-		JZ		skip		; 전송 해야 할 것이 없다
+		JZ		skip		; 전송해야 할 것이 없다
 		MOV		ESI,[EBX+20]	; 전송원
 		ADD		ESI,EBX
 		MOV		EDI,[EBX+12]	; 전송처

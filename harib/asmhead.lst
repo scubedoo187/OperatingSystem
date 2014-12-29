@@ -17,7 +17,7 @@
     17 0000C200                                 
     18 0000C200                                 ; 화면 모드를 설정
     19 0000C200                                 
-    20 0000C200 B0 13                           		MOV		AL, 0x13	; VGA 그래픽스, 320 x200x8bit 칼라
+    20 0000C200 B0 13                           		MOV		AL, 0x13	; VGA 그래픽스, 320x200x8bit 칼라
     21 0000C202 B4 00                           		MOV		AH,0x00
     22 0000C204 CD 10                           		INT		0x10
     23 0000C206 C6 06 0FF2 08                   		MOV		BYTE [VMODE], 8	; 화면 모드를 메모 한다(C언어가 참조한다)
@@ -106,7 +106,7 @@
    106 0000C2BB 67 66 8B 4B 10                  		MOV		ECX,[EBX+16]
    107 0000C2C0 66 83 C1 03                     		ADD		ECX, 3		; ECX += 3;
    108 0000C2C4 66 C1 E9 02                     		SHR		ECX, 2		; ECX /= 4;
-   109 0000C2C8 74 10                           		JZ		skip		; 전송 해야 할 것이 없다
+   109 0000C2C8 74 10                           		JZ		skip		; 전송해야 할 것이 없다
    110 0000C2CA 67 66 8B 73 14                  		MOV		ESI,[EBX+20]	; 전송원
    111 0000C2CF 66 01 DE                        		ADD		ESI,EBX
    112 0000C2D2 67 66 8B 7B 0C                  		MOV		EDI,[EBX+12]	; 전송처

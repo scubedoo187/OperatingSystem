@@ -25,14 +25,14 @@ void init_palette(void)
 	set_palette(0, 15, table_rgb);
 	return;
 
-	/* static char 명령은, 데이터 밖에 사용할 수 없지만 DB명령 상당 */
+	/* static char 명령은 데이터 밖에 사용할 수 없지만 DB명령에 상당 */
 }
 
 void set_palette(int start, int end, unsigned char *rgb)
 {
 	int i, eflags;
-	eflags = io_load_eflags();			/* 인터럽트 허가 플래그의 값을 기록한다 */
-	io_cli(); 					/* 허가 플래그를 0으로 해 인터럽트 금지로 한다 */
+	eflags = io_load_eflags();	/* 인터럽트 허가 플래그의 값을 기록한다 */
+	io_cli(); 			/* 허가 플래그를 0으로 해 인터럽트 금지로 한다 */
 	io_out8(0x03c8, start);
 	for (i = start; i <= end; i++) {
 		io_out8(0x03c9, rgb[0] / 4);
