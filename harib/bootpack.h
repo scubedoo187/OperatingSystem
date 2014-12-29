@@ -1,8 +1,8 @@
 /* asmhead.nas */
 struct BOOTINFO { /* 0x0ff0-0x0fff */
-	char cyls; /* ブートセクタはどこまでディスクを読んだのか */
-	char leds; /* ブート時のキーボードのLEDの状態 */
-	char vmode; /* ビデオモード  何ビットカラーか */
+	char cyls; /* ブ?トセク?はどこまでディスクを読んだのか */
+	char leds; /* ブ?ト時のキ???ドのLEDの状態 */
+	char vmode; /* ビデオモ?ド  何ビットカラ?か */
 	char reserve;
 	short scrnx, scrny; /* 画面解像度 */
 	char *vram;
@@ -20,6 +20,8 @@ int io_load_eflags(void);
 void io_store_eflags(int eflags);
 void load_gdtr(int limit, int addr);
 void load_idtr(int limit, int addr);
+int load_cr0(void);
+void store_cr0(int cr0);
 void asm_inthandler21(void);
 void asm_inthandler2c(void);
 

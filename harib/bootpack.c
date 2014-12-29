@@ -3,6 +3,8 @@
 #include "bootpack.h"
 #include <stdio.h>
 
+unsigned int memtest(unsigned int start, unsigned int end);
+
 void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *) ADR_BOOTINFO;
@@ -19,6 +21,7 @@ void HariMain(void)
 	io_out8(PIC1_IMR, 0xef); /* 마우스를 허가(11101111) */
 
 	init_keyboard();
+	enable_mouse(&mdec);
 
 	init_palette();
 	init_screen8(binfo->vram, binfo->scrnx, binfo->scrny);
@@ -29,7 +32,9 @@ void HariMain(void)
 	sprintf(s, "(%3d, %3d)", mx, my);
 	putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_FFFFFF, s);
 
-	enable_mouse(&mdec);
+	i = memtest(0x00400000, 0xbfffffff) / (1024 * 1024);
+	sprintf(s, "memory %dMB", i);
+	putfonts8_asc(binfo->vram, binfo->scrnx, 0, 32, COL8_FFFFFF, s);
 
 	for (;;) {
 		io_cli();
@@ -83,4 +88,41 @@ void HariMain(void)
 			}
 		}
 	}
+}
+
+#define EFLAGS_AC_BIT		0x00040000
+#define CR0_CACHE_DISABLE	0x60000000
+
+unsigned int memtest(unsigned int start, unsigned int end)
+{
+	char flg486 = 0;
+	unsigned int eflg, cr0, i;
+
+	/* 386인지, 486 이후인지를 확인 */
+	eflg = io_load_eflags();
+	eflg |= EFLAGS_AC_BIT;	/* AC-bit = 1 */
+	io_store_eflags(eflg);
+	eflg = io_load_eflags();
+	if ((eflg & EFLAGS_AC_BIT) != 0) {
+		/* 386 이상에서는 AC=1로 해도 자동으로 0이 되어 버린다 */
+		flg486 = 1;
+	}
+	eflg &= ~EFLAGS_AC_BIT;	/* AC-bit = 0 */
+	io_store_eflags(eflg);
+
+	if (flg486 != 0) {
+		cr0 = load_cr0();
+		cr0 |= CR0_CACHE_DISABLE;	/* 캐시 금지 */
+		store_cr0(cr0);
+	}
+
+	i = memtest_sub(start, end);
+
+	if (flg486 != 0) {
+		cr0 = load_cr0();
+		cr0 &= ~CR0_CACHE_DISABLE;	/* 캐시 허가 */
+		store_cr0(cr0);
+	}
+
+	return i;
 }
