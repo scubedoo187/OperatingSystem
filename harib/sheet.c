@@ -113,7 +113,7 @@ void sheet_refresh(struct SHTCTL *ctl)
 		for (by = 0; by < sht->bysize; by++) {
 			vy = sht->vy0 + by;
 			for (bx = 0; bx < sht->bxsize; bx++) {
-				vx = sht->vx0 = bx;
+				vx = sht->vx0 + bx;
 				c = buf[by * sht->bxsize + bx];
 				if (c != sht->col_inv) {
 					vram[vy * ctl->xsize + vx] = c;
