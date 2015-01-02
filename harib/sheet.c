@@ -116,6 +116,11 @@ void sheet_refreshsub(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1)
 	int h, bx, by, vx, vy, bx0, by0, bx1, by1;
 	unsigned char *buf, c, *vram = ctl->vram;
 	struct SHEET *sht;
+	/* refresh 범위가 화면 밖에 있으면 보정 */
+	if (vx0 < 0) { vx0 = 0; }
+	if (vy0 < 0) { vy0 = 0; }
+	if (vx1 > ctl->xsize) { vx1 = ctl->xsize; }
+	if (vy1 > ctl->ysize) { vy1 = ctl->ysize; }
 	for (h = 0; h <= ctl->top; h++) {
 		sht = ctl->sheets[h];
 		buf = sht->buf;
@@ -127,7 +132,7 @@ void sheet_refreshsub(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1)
 		if (bx0 < 0) { bx0 = 0; }	/* 리프레시의 범위가 레이어의 바깥 측이었을 경우 처리 */
 		if (by0 < 0) { by0 = 0; }
 		if (bx1 > sht->bxsize) { bx1 = sht->bxsize; }	/* 겹치기의 다른 부분에 관한 처리 */
-		if (by1 > sht->bysize) { by1 = sht->bysize; }	
+		if (by1 > sht->bysize) { by1 = sht->bysize; }		
 		for (by = 0; by < sht->bysize; by++) {
 			vy = sht->vy0 + by;
 			for (bx = 0; bx < sht->bxsize; bx++) {
