@@ -71,6 +71,7 @@ void sheet_updown(struct SHEET *sht, int height)
 				ctl->sheets[h]->height = h;
 			}
 			ctl->sheets[height] = sht;
+			sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height + 1);
 		} else {		/* 비표시화 */
 			if (ctl->top > old) {
 				/* 위에 있는 것을 하나씩 내린다. */
@@ -81,7 +82,7 @@ void sheet_updown(struct SHEET *sht, int height)
 			}
 			ctl->top--;		/* 표시 중의 레이어가 1개 줄어들게되므로, 맨위의 높이가 줄어든다. */
 		}
-		sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize);
+		sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, 0);
 	} else if (old < height) {	/* 이전보다 높아진다. */
 		if (old >= 0) {
 			/* 사이에 있는 것을 하나씩 내린다. */
@@ -99,7 +100,7 @@ void sheet_updown(struct SHEET *sht, int height)
 			ctl->sheets[height] = sht;
 			ctl->top++;		/* 표시 중의 레이어가 1개 증가하므로, 맨 위의 높이가 증가한다. */
 		}
-		sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize);
+		sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height);
 	}
 	return;
 }
@@ -108,12 +109,12 @@ void sheet_refresh(struct SHEET *sht, int bx0, int by0, int bx1, int by1)
 {
 	if (sht->height >= 0) {
 		/* 만약 표시 중이라면, 새로운 레이어 정보에 따라 화면을 다시 그린다. */
-		sheet_refreshsub(sht->ctl, sht->vx0 + bx0, sht->vy0 + by0, sht->vx0 + bx1, sht->vy0 + by1);
+		sheet_refreshsub(sht->ctl, sht->vx0 + bx0, sht->vy0 + by0, sht->vx0 + bx1, sht->vy0 + by1, sht->height);
 	}
 	return;
 }
 
-void sheet_refreshsub(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1)
+void sheet_refreshsub(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1, int h0)
 {
 	int h, bx, by, vx, vy, bx0, by0, bx1, by1;
 	unsigned char *buf, c, *vram = ctl->vram;
@@ -123,7 +124,7 @@ void sheet_refreshsub(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1)
 	if (vy0 < 0) { vy0 = 0; }
 	if (vx1 > ctl->xsize) { vx1 = ctl->xsize; }
 	if (vy1 > ctl->ysize) { vy1 = ctl->ysize; }
-	for (h = 0; h <= ctl->top; h++) {
+	for (h = h0; h <= ctl->top; h++) {
 		sht = ctl->sheets[h];
 		buf = sht->buf;
 		/* vx0~vy1 을 사용하여 bx0~by1을 역산한다 */
@@ -157,8 +158,8 @@ void sheet_slide(struct SHEET *sht, int vx0, int vy0)
 	sht->vx0 = vx0;
 	sht->vy0 = vy0;
 	if (sht->height >= 0) {		/* 만약 표시 중이라면 */
-		sheet_refreshsub(sht->ctl, old_vx0, old_vy0, old_vx0 + sht->bxsize, old_vy0 + sht->bysize);		/* 새로운 레이어 정보에 따라 화면을 다시 그린다. */
-		sheet_refreshsub(sht->ctl, vx0, vy0, vx0 + sht->bxsize, vy0 + sht->bysize);
+		sheet_refreshsub(sht->ctl, old_vx0, old_vy0, old_vx0 + sht->bxsize, old_vy0 + sht->bysize, 0);		/* 새로운 레이어 정보에 따라 화면을 다시 그린다. */
+		sheet_refreshsub(sht->ctl, vx0, vy0, vx0 + sht->bxsize, vy0 + sht->bysize, sht->height);
 	}
 	return;
 }

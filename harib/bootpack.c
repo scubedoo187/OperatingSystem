@@ -10,7 +10,7 @@ void HariMain(void)
 	struct BOOTINFO *binfo = (struct BOOTINFO *) ADR_BOOTINFO;
 	char s[40], keybuf[32], mousebuf[128];
 	int mx, my, i;
-	unsigned int memtotal;
+	unsigned int memtotal, count = 0;
 	struct MOUSE_DEC mdec;
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
 	struct SHTCTL *shtctl;
@@ -41,12 +41,12 @@ void HariMain(void)
 	buf_win = (unsigned char *)memman_alloc_4k(memman, 160 * 68);
 	sheet_setbuf(sht_back, buf_back, binfo->scrnx, binfo->scrny, -1); /* 투명색없음 */
 	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);
-	sheet_setbuf(sht_win, buf_win, 160, 68, -1);		/* 투명색 없음 */
+	sheet_setbuf(sht_win, buf_win, 160, 52, -1);		/* 투명색 없음 */
 	init_screen8(buf_back, binfo->scrnx, binfo->scrny);
 	init_mouse_cursor8(buf_mouse, 99);
-	make_window8(buf_win, 160, 68, "window");
-	putfonts8_asc(buf_win, 160, 24, 28, COL8_000000, "Welcome to");
-	putfonts8_asc(buf_win, 160, 24, 44, COL8_000000, "  My first OS!");
+	make_window8(buf_win, 160, 52, "Counter");
+	//putfonts8_asc(buf_win, 160, 24, 28, COL8_000000, "Welcome to");
+	//putfonts8_asc(buf_win, 160, 24, 44, COL8_000000, "  My first OS!");
 	sheet_slide(sht_back, 0, 0);
 	mx = (binfo->scrnx - 16) / 2; /* 화면 중앙이 되도록 좌표 계산 */
 	my = (binfo->scrny - 28 - 16) / 2;
@@ -63,9 +63,16 @@ void HariMain(void)
 	sheet_refresh(sht_back, 0, 0, binfo->scrnx, 48);
 
 	for (;;) {
+		count++;
+		sprintf(s, "%010d", count);
+		boxfill8(buf_win, 160, COL8_C6C6C6, 40, 28, 119, 43);
+		putfonts8_asc(buf_win, 160, 40, 28, COL8_000000, s);
+
+		sheet_refresh(sht_win, 40, 28, 120, 44);
+
 		io_cli();
 		if (fifo8_status(&keyfifo) + fifo8_status(&mousefifo) == 0) {
-			io_stihlt();
+			io_sti();
 		}
 		else {
 			if (fifo8_status(&keyfifo) != 0) {
