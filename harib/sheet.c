@@ -18,6 +18,7 @@ struct SHTCTL *shtctl_init(struct MEMMAN *memman, unsigned char *vram, int xsize
 	ctl->top = -1;	/* 시트가 한 장도 없다. */
 	for (i = 0; i < MAX_SHEETS; i++) {
 		ctl->sheets0[i].flags = 0;		/* 미사용 마크 */
+		ctl->sheets0[i].ctl = ctl;		/* 소속을 기록 */
 	}
 err:
 	return ctl;
@@ -47,8 +48,9 @@ void sheet_setbuf(struct SHEET *sht, unsigned char *buf, int xsize, int ysize, i
 	return;
 }
 
-void sheet_updown(struct SHTCTL *ctl, struct SHEET *sht, int height)
+void sheet_updown(struct SHEET *sht, int height)
 {
+	struct SHTCTL *ctl = sht->ctl;
 	int h, old = sht->height;	/* 설정 전의 높이를 기억한다. */
 
 	/* 지정한 높이가 너무 낮거나 너무 높으면 수정한다. */
@@ -102,11 +104,11 @@ void sheet_updown(struct SHTCTL *ctl, struct SHEET *sht, int height)
 	return;
 }
 
-void sheet_refresh(struct SHTCTL *ctl, struct SHEET *sht, int bx0, int by0, int bx1, int by1)
+void sheet_refresh(struct SHEET *sht, int bx0, int by0, int bx1, int by1)
 {
 	if (sht->height >= 0) {
 		/* 만약 표시 중이라면, 새로운 레이어 정보에 따라 화면을 다시 그린다. */
-		sheet_refreshsub(ctl, sht->vx0 + bx0, sht->vy0 + by0, sht->vx0 + bx1, sht->vy0 + by1);
+		sheet_refreshsub(sht->ctl, sht->vx0 + bx0, sht->vy0 + by0, sht->vx0 + bx1, sht->vy0 + by1);
 	}
 	return;
 }
@@ -149,22 +151,22 @@ void sheet_refreshsub(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1)
 	return;
 }
 
-void sheet_slide(struct SHTCTL *ctl, struct SHEET *sht, int vx0, int vy0)
+void sheet_slide(struct SHEET *sht, int vx0, int vy0)
 {
 	int old_vx0 = sht->vx0, old_vy0 = sht->vy0;
 	sht->vx0 = vx0;
 	sht->vy0 = vy0;
 	if (sht->height >= 0) {		/* 만약 표시 중이라면 */
-		sheet_refreshsub(ctl, old_vx0, old_vy0, old_vx0 + sht->bxsize, old_vy0 + sht->bysize);		/* 새로운 레이어 정보에 따라 화면을 다시 그린다. */
-		sheet_refreshsub(ctl, vx0, vy0, vx0 + sht->bxsize, vy0 + sht->bysize);
+		sheet_refreshsub(sht->ctl, old_vx0, old_vy0, old_vx0 + sht->bxsize, old_vy0 + sht->bysize);		/* 새로운 레이어 정보에 따라 화면을 다시 그린다. */
+		sheet_refreshsub(sht->ctl, vx0, vy0, vx0 + sht->bxsize, vy0 + sht->bysize);
 	}
 	return;
 }
 
-void sheet_free(struct SHTCTL *ctl, struct SHEET *sht)
+void sheet_free(struct SHEET *sht)
 {
 	if (sht->height >= 0) {
-		sheet_updown(ctl, sht, -1);		/* 표시 중이라면 우선 비표시로 한다. */
+		sheet_updown(sht, -1);		/* 표시 중이라면 우선 비표시로 한다. */
 	}
 	sht->flags = 0;		/* 미사용 마크 */
 	return;
