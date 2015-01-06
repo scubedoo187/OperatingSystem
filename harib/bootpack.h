@@ -176,8 +176,9 @@ struct TIMER {
 };
 
 struct TIMERCTL {
-	unsigned int count;
-	struct TIMER timer[MAX_TIMER];	/* 타임아웃을 MAX_TIMER 만큼 설정 가능 */
+	unsigned int count, next, using;	/* using = 현재 타이머가 몇 개나 동작하고 있는가 */
+	struct TIMER *timers[MAX_TIMER];	/* 타임아웃을 MAX_TIMER 만큼 설정 가능 */
+	struct TIMER timers0[MAX_TIMER];
 };
 extern struct TIMERCTL timerctl;
 void init_pit(void);
