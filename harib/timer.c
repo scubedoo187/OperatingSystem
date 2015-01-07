@@ -3,7 +3,7 @@
 
 #define	PIT_CTRL			0x0043
 #define PIT_CNT0			0x0040
-#define TIMER_FLAGS_ALLOC	1		/* 확보한 상태 */	
+#define TIMER_FLAGS_ALLOC	1		/* 확보한 상태 */
 #define TIMER_FLAGS_USING	2		/* 타이머 작동 중 */
 
 struct TIMERCTL timerctl;
@@ -41,7 +41,7 @@ void timer_free(struct TIMER *timer)
 	return;
 }
 
-void timer_init(struct TIMER *timer, struct FIFO8 *fifo, unsigned char data)
+void timer_init(struct TIMER *timer, struct FIFO32 *fifo, int data)
 {
 	timer->fifo = fifo;
 	timer->data = data;
@@ -87,7 +87,7 @@ void inthandler20(int *esp)
 		}
 		/* 타임아웃 */
 		timerctl.timers[i]->flags = TIMER_FLAGS_ALLOC;
-		fifo8_put(timerctl.timers[i]->fifo, timerctl.timers[i]->data);
+		fifo32_put(timerctl.timers[i]->fifo, timerctl.timers[i]->data);
 	}
 	/* 정확히 i개의 타이머가 타임아웃되었다. 나머지를 다른 곳으로 옮겨 놓는다. */
 	timerctl.using -= i;
