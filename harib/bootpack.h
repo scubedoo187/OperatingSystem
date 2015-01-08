@@ -168,6 +168,7 @@ void sheet_refreshmap(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1, in
 #define MAX_TIMER		500
 
 struct TIMER {
+	struct TIMER *next;
 	unsigned int timeout, flags;
 	struct FIFO32 *fifo;
 	int data;
@@ -175,7 +176,7 @@ struct TIMER {
 
 struct TIMERCTL {
 	unsigned int count, next, using;	/* using = 현재 타이머가 몇 개나 동작하고 있는가 */
-	struct TIMER *timers[MAX_TIMER];	/* 타임아웃을 MAX_TIMER 만큼 설정 가능 */
+	struct TIMER *t0;
 	struct TIMER timers0[MAX_TIMER];
 };
 extern struct TIMERCTL timerctl;
