@@ -1,6 +1,16 @@
 ; haribote-os boot asm
 ; TAB=4
 
+[INSTRSET "i486p"]				; 486명령까지 사용하고 싶다고 하는 기술
+
+VBEMODE	EQU		0x105			; 1024 x  768 x 8 bit 칼라
+; (화면 모드 일람)
+;	0x100 :  640 x  400 x 8 bit 칼라
+;	0x101 :  640 x  480 x 8 bit 칼라
+;	0x103 :  800 x  600 x 8 bit 칼라
+;	0x105 : 1024 x  768 x 8 bit 칼라
+;	0x107 : 1280 x 1024 x 8 bit 칼라
+
 BOTPAK	EQU		0x00280000		; bootpack의 로드 장소
 DSKCAC	EQU		0x00100000		; 디스크 캐쉬 프로그램의 장소
 DSKCAC0	EQU		0x00008000		; 디스크 캐쉬 프로그램의 장소(리얼모드)
@@ -14,19 +24,67 @@ SCRNY	EQU		0x0ff6			; 해상도 Y
 VRAM	EQU		0x0ff8			; 그래픽 버퍼의 개시 번지
 
 		ORG		0xc200		; 이 프로그램이 어디에 Read되는가
-
-; 화면 모드를 설정
-
-		MOV		AL, 0x13	; VGA 그래픽스, 320x200x8bit 칼라
-		MOV		AH,0x00
+		
+; VBE 존재 확인
+	
+		MOV		AX, 0x9000
+		MOV		ES, AX
+		MOV		DI, 0
+		MOV		AX, 0x4f00
 		INT		0x10
-		MOV		BYTE [VMODE], 8	; 화면 모드를 메모 한다(C언어가 참조한다)
-		MOV		WORD [SCRNX],320
-		MOV		WORD [SCRNY],200
-		MOV		DWORD [VRAM],0x000a0000
+		CMP		AX, 0x004f
+		JNE		scrn320
+		
+; VBE의 버전 체크
+	
+		MOV		AX, [ES:DI+4]
+		CMP		AX, 0x0200
+		JB		scrn320
+				
+; 화면 모드 정보를 얻는다.
 
+		MOV		CX, VBEMODE
+		MOV		AX, 0x4f01
+		INT		0x10
+		CMP		AX, 0x004f
+		JNE		scrn320
+		
+; 화면 모드 정보의 확인
+
+		CMP		BYTE [ES:DI+0x19], 8
+		JNE		scrn320
+		CMP		BYTE [ES:DI+0x1b], 4
+		JNE		scrn320
+		MOV		AX, [ES:DI+0x00]
+		AND		AX, 0x0080
+		JZ		scrn320		; 모드 속성의 bit7이 0이었으므로 포기한다.
+
+; 화면 모드의 변환
+
+	MOV		BX, VBEMODE+0x4000
+	MOV		AX, 0x4f02
+	INT 	0x10
+	MOV		BYTE [VMODE], 8		;화면 모드를 write(c언어가 참조한다)
+	MOV		AX, [ES:DI+0x12]
+	MOV		[SCRNX], AX
+	MOV		AX, [ES:DI+0x14]
+	MOV		[SCRNY], AX
+	MOV		EAX, [ES:DI+0x28]
+	MOV		[VRAM], EAX
+	JMP		keystatus
+		
+scrn320:
+		MOV		AL, 0x13	; VGA 그래픽스, 320x200x8bit컬러
+		MOV		AH, 0x00
+		INT		0x10
+		MOV		BYTE[VMODE], 8	; 화면 모드 쓰기 (c언어가 참조한다)
+		MOV		WORD[SCRNX], 320
+		MOV		WORD[SCRNY], 200
+		MOV		DWORD[VRAM], 0x000a0000
+		
 ; 키보드의 LED 상태를 BIOS가 알려준다
 
+keystatus:
 		MOV		AH,0x02
 		INT		0x16 		; keyboard BIOS
 		MOV		[LEDS],AL
@@ -54,8 +112,6 @@ VRAM	EQU		0x0ff8			; 그래픽 버퍼의 개시 번지
 		CALL	waitkbdout
 
 ; 프로텍트 모드 이행
-
-[INSTRSET "i486p"]				; 486명령까지 사용하고 싶다고 하는 기술
 
 		LGDT	[GDTR0]			; 잠정 GDT를 설정
 		MOV		EAX,CR0
