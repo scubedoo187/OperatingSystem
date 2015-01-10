@@ -3,6 +3,7 @@
 #include "bootpack.h"
 #include <stdio.h>
 
+void make_textbox8(struct SHEET *sht, int x0, int y0, int sx, int sy, int c);
 void make_window8(unsigned char *buf, int xsize, int ysize, char *title);
 void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int c, int b, char *s, int l);
 
@@ -12,7 +13,7 @@ void HariMain(void)
 	struct FIFO32 fifo;
 	char s[40];
 	int fifobuf[128];
-	int mx, my, i, count = 0;
+	int mx, my, i, cursor_x, cursor_c;
 	unsigned int memtotal;
 	struct MOUSE_DEC mdec;
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
@@ -20,7 +21,14 @@ void HariMain(void)
 	struct SHEET *sht_back, *sht_mouse, *sht_win;
 	struct TIMER *timer, *timer2, *timer3;
 	unsigned char *buf_back, buf_mouse[256], *buf_win;
-
+	static char keytable[0x54] = {
+		0,   0,   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',  '-', '=', 0,   0,
+		'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']',  0,   0,   'A', 'S',
+		'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', '\'','`', 0,  '\\', 'Z', 'X', 'C', 'V',
+		'B', 'N', 'M', ',', '.', '/', 0,   '*', 0,   ' ', 0,  0,    0,   0,   0,   0,
+		0,   0,   0,   0,   0,   0,   0,   '7', '8', '9', '-','4',  '5', '6', '+', '1',
+		'2', '3', '0', '.'
+	};
 	init_gdtidt();
 	init_pic();
 	io_sti(); /* IDT/PIC의 초기화가 끝났으므로 CPU의 인터럽트 금지를 해제 */
@@ -58,7 +66,10 @@ void HariMain(void)
 	sheet_setbuf(sht_win, buf_win, 160, 52, -1);		/* 투명색 없음 */
 	init_screen8(buf_back, binfo->scrnx, binfo->scrny);
 	init_mouse_cursor8(buf_mouse, 99);
-	make_window8(buf_win, 160, 52, "Counter");
+	make_window8(buf_win, 160, 52, "Window");
+	make_textbox8(sht_win, 8, 28, 144, 16, COL8_FFFFFF);
+	cursor_x = 8;
+	cursor_c = COL8_FFFFFF;
 	sheet_slide(sht_back, 0, 0);
 	mx = (binfo->scrnx - 16) / 2; /* 화면 중앙이 되도록 좌표 계산 */
 	my = (binfo->scrny - 28 - 16) / 2;
@@ -74,17 +85,32 @@ void HariMain(void)
 	putfonts8_asc_sht(sht_back, 0, 32, COL8_FFFFFF, COL8_008484, s, 40);
 
 	for (;;) {
-		count++;
-
 		io_cli();
 		if (fifo32_status(&fifo) == 0) {
-			io_sti();
+			io_stihlt();
 		} else {
 			i = fifo32_get(&fifo);
 			io_sti();
 			if (256 <= i && i <= 511) {		/* 키보드 데이터 */
 				sprintf(s, "%02X", i - 256);
 				putfonts8_asc_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
+				if (i < 0x54 + 256) {
+					if (keytable[i - 256] != 0 && cursor_x < 144) {		/* 문자 */
+						/* 한 글자 표시하고 나서 커서를 한 글자 뒤로 이동 */
+						s[0] = keytable[i - 256];
+						s[1] = 0;
+						putfonts8_asc_sht(sht_win, cursor_x, 28, COL8_000000, COL8_FFFFFF, s, 1);
+						cursor_x += 8;
+					}
+				}
+				if (i == 256 + 0x0e && cursor_x > 8) {		/* 백 스페이스 */
+					/* 커서를 백스페이스로 지우고 나서 커서를 하나 앞으로 이동 */
+					putfonts8_asc_sht(sht_win, cursor_x, 28, COL8_000000, COL8_FFFFFF, " ", 1);
+					cursor_x -= 8;
+				}
+				/* 커서 다시 표시 */
+				boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 7, 43);
+				sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
 			} else if (512 <= i && i <= 767) {		/* 마우스 데이터 */
 				if (mouse_decode(&mdec, i - 512) != 0) {
 					/* 데이터가 3바이트 모였으므로 표시 */
@@ -117,24 +143,26 @@ void HariMain(void)
 					sprintf(s, "(%3d, %3d)", mx, my);
 					putfonts8_asc_sht(sht_back, 0, 0, COL8_FFFFFF, COL8_008484, s, 10);
 					sheet_slide(sht_mouse, mx, my);
+					if ((mdec.btn & 0x01) != 0) {
+						/* 왼쪽 버튼을 누르고 있으면 sht_win 이 움직인다. */
+						sheet_slide(sht_win, mx - 80, my - 8);
+					}
 				}
 			} else if (i == 10) {	/* 10초 타이머 */
 				putfonts8_asc_sht(sht_back, 0, 64, COL8_FFFFFF, COL8_008484, "10[sec]", 7);
-				sprintf(s, "%010d", count);
-				putfonts8_asc_sht(sht_win, 40, 28, COL8_000000, COL8_C6C6C6, s, 10);
 			} else if (i == 3) {	/* 3초 타이머 */
 				putfonts8_asc_sht(sht_back, 0, 80, COL8_FFFFFF, COL8_008484, " 3[sec]", 7);
-				count = 0;	/* 측정 개시 */
-			} else if (i == 1) {	/* 커서용 타이머 */
-				timer_init(timer3, &fifo, 0);	/* 다음은 0을 */
-				boxfill8(buf_back, binfo->scrnx, COL8_FFFFFF, 8, 96, 15, 111);
+			} else if (i <= 1) {	/* 커서용 타이머 */
+				if (i != 0) {
+					timer_init(timer3, &fifo, 0);	/* 다음은 0을 */
+					cursor_c = COL8_000000;
+				} else {
+					timer_init(timer3, &fifo, 1);	/* 다음은 1을 */
+					cursor_c = COL8_FFFFFF;
+				}
 				timer_settime(timer3, 50);
-				sheet_refresh(sht_back, 8, 96, 16, 112);
-			} else if (i == 0) {	/* 커서용 타이머 */
-				timer_init(timer3, &fifo, 1);	/* 다음은 1을 */
-				boxfill8(buf_back, binfo->scrnx, COL8_008484, 8, 96, 15, 111);
-				timer_settime(timer3, 50);
-				sheet_refresh(sht_back, 8, 96, 16, 112);
+				boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 7, 43);
+				sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
 			}
 		}
 	}
@@ -194,5 +222,20 @@ void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int c, int b, char *s, i
 	boxfill8(sht->buf, sht->bxsize, b, x, y, x + l * 8 - 1, y + 15);
 	putfonts8_asc(sht->buf, sht->bxsize, x, y, c, s);
 	sheet_refresh(sht, x, y, x + l * 8, y + 16);
+	return;
+}
+
+void make_textbox8(struct SHEET *sht, int x0, int y0, int sx, int sy, int c)
+{
+	int x1 = x0 + sx, y1 = y0 + sy;
+	boxfill8(sht->buf, sht->bxsize, COL8_848484, x0 - 2, y0 - 3, x1 + 1, y0 - 3);
+	boxfill8(sht->buf, sht->bxsize, COL8_848484, x0 - 3, y0 - 3, x0 - 3, y1 + 1);
+	boxfill8(sht->buf, sht->bxsize, COL8_FFFFFF, x0 - 3, y1 + 2, x1 + 1, y1 + 2);
+	boxfill8(sht->buf, sht->bxsize, COL8_FFFFFF, x1 + 2, y0 - 3, x1 + 2, y1 + 2);
+	boxfill8(sht->buf, sht->bxsize, COL8_000000, x0 - 1, y0 - 2, x1 + 0, y0 - 2);
+	boxfill8(sht->buf, sht->bxsize, COL8_000000, x0 - 2, y0 - 2, x0 - 2, y1 + 0);
+	boxfill8(sht->buf, sht->bxsize, COL8_C6C6C6, x0 - 2, y1 + 1, x1 + 0, y1 + 1);
+	boxfill8(sht->buf, sht->bxsize, COL8_C6C6C6, x1 + 1, y0 - 2, x1 + 1, y1 + 1);
+	boxfill8(sht->buf, sht->bxsize, c,           x0 - 1, y0 - 1, x1 + 0, y1 + 0);
 	return;
 }
