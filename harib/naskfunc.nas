@@ -12,6 +12,8 @@
 		GLOBAL	_io_load_eflags, _io_store_eflags
 		GLOBAL	_load_gdtr, _load_idtr
 		GLOBAL	_load_cr0, _store_cr0
+		GLOBAL	_load_tr
+		GLOBAL	_farjmp
 		GLOBAL	_asm_inthandler20, _asm_inthandler21
 		GLOBAL	_asm_inthandler2c
 		GLOBAL	_memtest_sub
@@ -105,6 +107,14 @@ _store_cr0:		; void store_cr0(int cr0);
 		MOV		CR0,EAX
 		RET
 
+_load_tr:		; void load_tr(int tr);
+		LTR		[ESP + 4]	;tr
+		RET
+		
+_farjmp:		; void farjmp(int eip, int cs);
+		JMP		FAR[ESP + 4]		; eip, cs
+		RET
+		
 _asm_inthandler21:
 		PUSH	ES
 		PUSH	DS
