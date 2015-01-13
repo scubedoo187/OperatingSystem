@@ -88,6 +88,7 @@ void timer_settime(struct TIMER *timer, unsigned int timeout)
 void inthandler20(int *esp)
 {
 	struct TIMER *timer;
+	char ts = 0;
 	io_out8(PIC0_OCW2, 0x60);	/* IRQ-00 접수 완료를 PIC에 통지 */
 	timerctl.count++;
 	if (timerctl.next > timerctl.count) {
@@ -101,11 +102,17 @@ void inthandler20(int *esp)
 		}
 		/* 타임아웃 */
 		timer->flags = TIMER_FLAGS_ALLOC;
-		fifo32_put(timer->fifo, timer->data);
+		if (timer != mt_timer) {
+			fifo32_put(timer->fifo, timer->data);
+		} else {
+			ts = 1;		/* mt_timer 가 타임아웃됨. */
+		}		
 		timer = timer->next;		/* 다음에 올 타이머 번지를 timer에 대입 */
-	}
-	/* 새로운 곳으로 이동시킴 */
+	}	
 	timerctl.t0 = timer;	
 	timerctl.next = timer->timeout;
+	if (ts != 0) {
+		mt_taskswitch();
+	}
 	return;
 }

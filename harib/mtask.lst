@@ -1,0 +1,49 @@
+     1 00000000                                 [FORMAT "WCOFF"]
+     2 00000000                                 [INSTRSET "i486p"]
+     3 00000000                                 [OPTIMIZE 1]
+     4 00000000                                 [OPTION 1]
+     5 00000000                                 [BITS 32]
+     6 00000000                                 	EXTERN	_timer_alloc
+     7 00000000                                 	EXTERN	_timer_settime
+     8 00000000                                 	EXTERN	_farjmp
+     9 00000000                                 [FILE "mtask.c"]
+    10                                          [SECTION .text]
+    11 00000000                                 	GLOBAL	_mt_init
+    12 00000000                                 _mt_init:
+    13 00000000 55                              	PUSH	EBP
+    14 00000001 89 E5                           	MOV	EBP,ESP
+    15 00000003 E8 [00000000]                   	CALL	_timer_alloc
+    16 00000008 6A 02                           	PUSH	2
+    17 0000000A A3 [00000000]                   	MOV	DWORD [_mt_timer],EAX
+    18 0000000F 50                              	PUSH	EAX
+    19 00000010 E8 [00000000]                   	CALL	_timer_settime
+    20 00000015 C7 05 [00000004] 00000018       	MOV	DWORD [_mt_tr],24
+    21 0000001F C9                              	LEAVE
+    22 00000020 C3                              	RET
+    23 00000021                                 	GLOBAL	_mt_taskswitch
+    24 00000021                                 _mt_taskswitch:
+    25 00000021 55                              	PUSH	EBP
+    26 00000022 31 C0                           	XOR	EAX,EAX
+    27 00000024 83 3D [00000004] 18             	CMP	DWORD [_mt_tr],24
+    28 0000002B 0F 94 C0                        	SETE	AL
+    29 0000002E 89 E5                           	MOV	EBP,ESP
+    30 00000030 6A 02                           	PUSH	2
+    31 00000032 FF 35 [00000000]                	PUSH	DWORD [_mt_timer]
+    32 00000038 8D 04 C5 00000018               	LEA	EAX,DWORD [24+EAX*8]
+    33 0000003F A3 [00000004]                   	MOV	DWORD [_mt_tr],EAX
+    34 00000044 E8 [00000000]                   	CALL	_timer_settime
+    35 00000049 FF 35 [00000004]                	PUSH	DWORD [_mt_tr]
+    36 0000004F 6A 00                           	PUSH	0
+    37 00000051 E8 [00000000]                   	CALL	_farjmp
+    38 00000056 C9                              	LEAVE
+    39 00000057 C3                              	RET
+    40 00000058                                 	GLOBAL	_mt_timer
+    41                                          [SECTION .data]
+    42 00000000                                 	ALIGNB	4
+    43 00000000                                 _mt_timer:
+    44 00000000 00 00 00 00                     	RESB	4
+    45 00000004                                 	GLOBAL	_mt_tr
+    46                                          [SECTION .data]
+    47 00000004                                 	ALIGNB	4
+    48 00000004                                 _mt_tr:
+    49 00000004 00 00 00 00                     	RESB	4
