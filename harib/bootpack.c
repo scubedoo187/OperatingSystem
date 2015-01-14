@@ -6,14 +6,6 @@
 void make_textbox8(struct SHEET *sht, int x0, int y0, int sx, int sy, int c);
 void make_window8(unsigned char *buf, int xsize, int ysize, char *title);
 void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int c, int b, char *s, int l);
-
-struct TSS32 {
-	int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
-	int eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
-	int es, cs, ss, ds, fs, gs;
-	int ldtr, iomap;
-};
-
 void task_b_main(struct SHEET *sht_back);
 
 void HariMain(void)
@@ -38,13 +30,12 @@ void HariMain(void)
 		0,   0,   0,   0,   0,   0,   0,   '7', '8', '9', '-','4',  '5', '6', '+', '1',
 		'2', '3', '0', '.'
 	};
-	struct TSS32 tss_a, tss_b;
-	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
+	struct TASK *task_a, *task_b;
 	
 	init_gdtidt();
 	init_pic();
 	io_sti(); /* IDT/PIC의 초기화가 끝났으므로 CPU의 인터럽트 금지를 해제 */
-	fifo32_init(&fifo, 128, fifobuf);
+	fifo32_init(&fifo, 128, fifobuf, 0);
 	init_pit();				/* PIT 초기화 */
 	init_keyboard(&fifo, 256);
 	enable_mouse(&fifo, 512, &mdec);	
@@ -96,37 +87,25 @@ void HariMain(void)
 		memtotal / (1024 * 1024), memman_total(memman) / 1024);
 	putfonts8_asc_sht(sht_back, 0, 32, COL8_FFFFFF, COL8_008484, s, 40);
 
-	tss_a.ldtr = 0;
-	tss_a.iomap = 0x40000000;
-	tss_b.ldtr = 0;
-	tss_b.iomap = 0x40000000;
-	set_segmdesc(gdt + 3, 103, (int)&tss_a, AR_TSS32);
-	set_segmdesc(gdt + 4, 103, (int)&tss_b, AR_TSS32);
-	load_tr(3 * 8);
-	task_b_esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 8;
-	tss_b.eip = (int)&task_b_main;
-	tss_b.eflags = 0x00000202;	/* IF = 1; */
-	tss_b.eax = 0;
-	tss_b.ecx = 0;
-	tss_b.edx = 0;
-	tss_b.ebx = 0;
-	tss_b.esp = task_b_esp;
-	tss_b.ebp = 0;
-	tss_b.esi = 0;
-	tss_b.edi = 0;
-	tss_b.es = 1 * 8;
-	tss_b.cs = 2 * 8;
-	tss_b.ss = 1 * 8;
-	tss_b.ds = 1 * 8;
-	tss_b.fs = 1 * 8;
-	tss_b.gs = 1 * 8;
-	*((int *)(task_b_esp + 4)) = (int)sht_back;
-	mt_init();
+	task_a = task_init(memman);
+	fifo.task = task_a;	
+	task_b = task_alloc();
+	task_b->tss.esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 8;
+	task_b->tss.eip = (int)&task_b_main;
+	task_b->tss.es = 1 * 8;
+	task_b->tss.cs = 2 * 8;
+	task_b->tss.ss = 1 * 8;
+	task_b->tss.ds = 1 * 8;
+	task_b->tss.fs = 1 * 8;
+	task_b->tss.gs = 1 * 8;
+	*((int*)(task_b->tss.esp + 4)) = (int)sht_back;
+	task_run(task_b);
 
 	for (;;) {
 		io_cli();
 		if (fifo32_status(&fifo) == 0) {
-			io_stihlt();
+			task_sleep(task_a);
+			io_sti();
 		} else {
 			i = fifo32_get(&fifo);
 			io_sti();
@@ -286,10 +265,10 @@ void task_b_main(struct SHEET *sht_back)
 	int i, fifobuf[128], count = 0, count0 = 0;
 	char s[12];
 
-	fifo32_init(&fifo, 128, fifobuf);
+	fifo32_init(&fifo, 128, fifobuf, 0);
 	timer_put = timer_alloc();
 	timer_init(timer_put, &fifo, 1);
-	//timer_settime(timer_put, 1);
+	//timer_settime(timer_put, 100);
 	timer_1s = timer_alloc();
 	timer_init(timer_1s, &fifo, 100);
 	timer_settime(timer_1s, 100);
@@ -305,7 +284,7 @@ void task_b_main(struct SHEET *sht_back)
 			if (i == 1)	{
 				sprintf(s, "%11d", count);
 				putfonts8_asc_sht(sht_back, 0, 144, COL8_FFFFFF, COL8_008484, s, 11);
-				timer_settime(timer_put, 1);
+				timer_settime(timer_put, 100);
 			} else if (i == 100) {
 				sprintf(s, "%11d", count - count0);
 				putfonts8_asc_sht(sht_back, 0, 128, COL8_FFFFFF, COL8_008484, s, 11);

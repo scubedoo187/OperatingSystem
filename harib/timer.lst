@@ -7,9 +7,9 @@
      7 00000000                                 	EXTERN	_io_load_eflags
      8 00000000                                 	EXTERN	_io_cli
      9 00000000                                 	EXTERN	_io_store_eflags
-    10 00000000                                 	EXTERN	_mt_timer
+    10 00000000                                 	EXTERN	_task_timer
     11 00000000                                 	EXTERN	_fifo32_put
-    12 00000000                                 	EXTERN	_mt_taskswitch
+    12 00000000                                 	EXTERN	_task_switch
     13 00000000                                 [FILE "timer.c"]
     14                                          [SECTION .text]
     15 00000000                                 	GLOBAL	_init_pit
@@ -141,7 +141,7 @@
    141 0000014A 3B 05 [00000000]                	CMP	EAX,DWORD [_timerctl]
    142 00000150 77 27                           	JA	L32
    143 00000152 C7 43 08 00000001               	MOV	DWORD [8+EBX],1
-   144 00000159 3B 1D [00000000]                	CMP	EBX,DWORD [_mt_timer]
+   144 00000159 3B 1D [00000000]                	CMP	EBX,DWORD [_task_timer]
    145 0000015F 74 11                           	JE	L35
    146 00000161 FF 73 10                        	PUSH	DWORD [16+EBX]
    147 00000164 FF 73 0C                        	PUSH	DWORD [12+EBX]
@@ -171,7 +171,7 @@
    171 00000194 5B                              	POP	EBX
    172 00000195 5E                              	POP	ESI
    173 00000196 5D                              	POP	EBP
-   174 00000197 E9 [00000000]                   	JMP	_mt_taskswitch
+   174 00000197 E9 [00000000]                   	JMP	_task_switch
    175 0000019C                                 	GLOBAL	_timerctl
    176                                          [SECTION .data]
    177 00000000                                 	ALIGNB	16
