@@ -193,6 +193,8 @@ void timer_settime(struct TIMER *timer, unsigned int timeout);
 /* mtask.c */
 #define MAX_TASKS		1000	/* 최대 태스크의 갯수 */
 #define TASK_GDT0		3		/* TSS 를 GDT의 몇 번부터 할당할 것인가 */
+#define MAX_TASKS_LV	100
+#define MAX_TASKLEVELS	10
 struct TSS32 {
 	int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
 	int eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
@@ -201,17 +203,27 @@ struct TSS32 {
 };
 struct TASK {
 	int sel, flags;		/* sel 은 GDT 의 번호 */
+	int priority, level;
 	struct TSS32 tss;
 };
+struct TASKLEVEL {
+	int running;	/* 현재 동작중인 태스크 수 */
+	int now;		/* 현재 동작하고 있는 태스크가 어떤 것인지 알 수 있도록 하기 위한 변수 */
+	struct TASK *tasks[MAX_TASKS_LV];
+};
 struct TASKCTL {
-	int running;	/* 동작하고 있는 태스크의 수 */
-	int now;		/* 현재 동작하고 있는 태스크는 어떤 것인가 */
-	struct TASK *tasks[MAX_TASKS];
+	int now_lv;		/* 현재 동작중인 레벨 */
+	char lv_change;	/* 다음 번 태스크를 스위치할 때 레벨도 바꿀지 말지의 여부 */
+	struct TASKLEVEL level[MAX_TASKLEVELS];
 	struct TASK tasks0[MAX_TASKS];
 };
 extern struct TIMER *task_timer;
 struct TASK *task_init(struct MEMMAN *memman);
-void task_run(struct TASK *task);
+void task_run(struct TASK *task, int level, int priority);
 struct TASK *task_alloc(void);
 void task_switch(void);
 void task_sleep(struct TASK *task);
+struct TASK *task_now(void);
+void task_add(struct TASK *task);
+void task_remove(struct TASK *task);
+void task_switchsub(void);

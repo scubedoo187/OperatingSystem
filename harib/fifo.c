@@ -33,7 +33,7 @@ int fifo32_put(struct FIFO32 *fifo, int data)
 	fifo->free--;
 	if (fifo->task != 0) {
 		if (fifo->task->flags != 2) {	/* 태스크가 자고 있으면 */
-			task_run(fifo->task);		/* 깨워 준다 */
+			task_run(fifo->task, -1, 0);		/* 깨워 준다 */
 		}
 	}
 	return 0;
