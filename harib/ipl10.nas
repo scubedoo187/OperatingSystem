@@ -43,8 +43,10 @@ entry:
 		MOV		CH, 0			; 실린더 0
 		MOV		DH, 0			; 헤드 0
 		MOV		CL, 2			; 섹터 2
+
 readloop:
 		MOV		SI, 0			; 실패 회수를 세는 레지스터
+
 retry:
 		MOV		AH, 0x02		; AH=0x02 : 디스크 read
 		MOV		AL, 1			; 1 섹터
@@ -59,6 +61,7 @@ retry:
 		MOV		DL, 0x00		; A드라이브
 		INT		0x13			; 드라이브의 리셋트
 		JMP		retry
+
 next:
 		MOV		AX, ES			; 주소를 0x200 진행한다
 		ADD		AX,0x0020
@@ -84,6 +87,7 @@ error:
 		MOV		AX,0
 		MOV		ES,AX
 		MOV		SI,msg
+
 putloop:
 		MOV		AL,[SI]
 		ADD		SI, 1			; SI에 1을 더한다
@@ -93,9 +97,11 @@ putloop:
 		MOV		BX, 15			; 칼라 코드
 		INT		0x10			; 비디오 BIOS 호출
 		JMP		putloop
+
 fin:
 		HLT					; 무엇인가 있을 때까지 CPU를 정지시킨다
 		JMP		fin			; endless loop
+
 msg:
 		DB		0x0a, 0x0a		; 개행을 2개
 		DB		"load error"

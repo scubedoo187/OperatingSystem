@@ -1,7 +1,7 @@
 ; naskfunc
 ; TAB=4
 
-[FORMAT "WCOFF"]				; 오브젝트 파일을 만드는 모드	
+[FORMAT "WCOFF"]				; 오브젝트 파일을 만드는 모드
 [INSTRSET "i486p"]				; 486명령까지 사용하고 싶다고 하는 기술
 [BITS 32]					; 32비트 모드용의 기계어를 만들게 한다
 [FILE "naskfunc.nas"]				; 원시 파일명 정보
@@ -162,7 +162,7 @@ _asm_inthandler20:
 		POP		DS
 		POP		ES
 		IRETD
-		
+
 _memtest_sub:	;unsigned int memtest_sub(unsigned int start, unsigned int end);
 		PUSH	EDI		; (EBX, ESI, EDI 도 사용하고 싶기 때문에)
 		PUSH	ESI
@@ -170,6 +170,7 @@ _memtest_sub:	;unsigned int memtest_sub(unsigned int start, unsigned int end);
 		MOV		ESI, 0xaa55aa55				; pat0 = 0xaa55aa55;
 		MOV		EDI, 0x55aa55aa				; pat1 = 0x55aa55aa;
 		MOV		EAX, [ESP + 12 + 4]			; i = start;
+
 mts_loop:
 		MOV		EBX, EAX
 		ADD		EBX, 0xffc					; p = i + 0xffc;
@@ -189,6 +190,7 @@ mts_loop:
 		POP		ESI
 		POP		EDI
 		RET
+		
 mts_fin:
 		MOV		[EBX], EDX					; *p = old;
 		POP		EBX

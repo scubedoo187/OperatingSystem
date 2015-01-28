@@ -1,7 +1,7 @@
      1 00000000                                 ; naskfunc
      2 00000000                                 ; TAB=4
      3 00000000                                 
-     4 00000000                                 [FORMAT "WCOFF"]				; 오브젝트 파일을 만드는 모드	
+     4 00000000                                 [FORMAT "WCOFF"]				; 오브젝트 파일을 만드는 모드
      5 00000000                                 [INSTRSET "i486p"]				; 486명령까지 사용하고 싶다고 하는 기술
      6 00000000                                 [BITS 32]					; 32비트 모드용의 기계어를 만들게 한다
      7 00000000                                 [FILE "naskfunc.nas"]				; 원시 파일명 정보
@@ -162,7 +162,7 @@
    162 000000C8 1F                              		POP		DS
    163 000000C9 07                              		POP		ES
    164 000000CA CF                              		IRETD
-   165 000000CB                                 		
+   165 000000CB                                 
    166 000000CB                                 _memtest_sub:	;unsigned int memtest_sub(unsigned int start, unsigned int end);
    167 000000CB 57                              		PUSH	EDI		; (EBX, ESI, EDI 도 사용하고 싶기 때문에)
    168 000000CC 56                              		PUSH	ESI
@@ -170,28 +170,30 @@
    170 000000CE BE AA55AA55                     		MOV		ESI, 0xaa55aa55				; pat0 = 0xaa55aa55;
    171 000000D3 BF 55AA55AA                     		MOV		EDI, 0x55aa55aa				; pat1 = 0x55aa55aa;
    172 000000D8 8B 44 24 10                     		MOV		EAX, [ESP + 12 + 4]			; i = start;
-   173 000000DC                                 mts_loop:
-   174 000000DC 89 C3                           		MOV		EBX, EAX
-   175 000000DE 81 C3 00000FFC                  		ADD		EBX, 0xffc					; p = i + 0xffc;
-   176 000000E4 8B 13                           		MOV		EDX, [EBX]					; old = *p;
-   177 000000E6 89 33                           		MOV		[EBX], ESI					; *p = pat0;
-   178 000000E8 83 33 FF                        		XOR		DWORD [EBX], 0xffffffff		; *p ^= 0xffffffff;
-   179 000000EB 3B 3B                           		CMP		EDI, [EBX]					; if (*p != pat1) goto fin;
-   180 000000ED 75 18                           		JNE		mts_fin
-   181 000000EF 83 33 FF                        		XOR		DWORD [EBX], 0xffffffff		; *p ^= 0xffffffff;
-   182 000000F2 3B 33                           		CMP		ESI, [EBX]					; if (*p != pat0) goto fin;
-   183 000000F4 75 11                           		JNE		mts_fin
-   184 000000F6 89 13                           		MOV		[EBX], EDX					; *p = old;
-   185 000000F8 05 00001000                     		ADD		EAX, 0x1000					; i += 0x1000;
-   186 000000FD 3B 44 24 14                     		CMP		EAX, [ESP + 12 + 8]			; if (i <= end) goto mts_loop;
-   187 00000101 76 D9                           		JBE		mts_loop
-   188 00000103 5B                              		POP		EBX
-   189 00000104 5E                              		POP		ESI
-   190 00000105 5F                              		POP		EDI
-   191 00000106 C3                              		RET
-   192 00000107                                 mts_fin:
-   193 00000107 89 13                           		MOV		[EBX], EDX					; *p = old;
-   194 00000109 5B                              		POP		EBX
-   195 0000010A 5E                              		POP		ESI
-   196 0000010B 5F                              		POP		EDI
-   197 0000010C C3                              		RET
+   173 000000DC                                 
+   174 000000DC                                 mts_loop:
+   175 000000DC 89 C3                           		MOV		EBX, EAX
+   176 000000DE 81 C3 00000FFC                  		ADD		EBX, 0xffc					; p = i + 0xffc;
+   177 000000E4 8B 13                           		MOV		EDX, [EBX]					; old = *p;
+   178 000000E6 89 33                           		MOV		[EBX], ESI					; *p = pat0;
+   179 000000E8 83 33 FF                        		XOR		DWORD [EBX], 0xffffffff		; *p ^= 0xffffffff;
+   180 000000EB 3B 3B                           		CMP		EDI, [EBX]					; if (*p != pat1) goto fin;
+   181 000000ED 75 18                           		JNE		mts_fin
+   182 000000EF 83 33 FF                        		XOR		DWORD [EBX], 0xffffffff		; *p ^= 0xffffffff;
+   183 000000F2 3B 33                           		CMP		ESI, [EBX]					; if (*p != pat0) goto fin;
+   184 000000F4 75 11                           		JNE		mts_fin
+   185 000000F6 89 13                           		MOV		[EBX], EDX					; *p = old;
+   186 000000F8 05 00001000                     		ADD		EAX, 0x1000					; i += 0x1000;
+   187 000000FD 3B 44 24 14                     		CMP		EAX, [ESP + 12 + 8]			; if (i <= end) goto mts_loop;
+   188 00000101 76 D9                           		JBE		mts_loop
+   189 00000103 5B                              		POP		EBX
+   190 00000104 5E                              		POP		ESI
+   191 00000105 5F                              		POP		EDI
+   192 00000106 C3                              		RET
+   193 00000107                                 		
+   194 00000107                                 mts_fin:
+   195 00000107 89 13                           		MOV		[EBX], EDX					; *p = old;
+   196 00000109 5B                              		POP		EBX
+   197 0000010A 5E                              		POP		ESI
+   198 0000010B 5F                              		POP		EDI
+   199 0000010C C3                              		RET
