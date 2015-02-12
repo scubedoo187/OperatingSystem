@@ -227,3 +227,4 @@ struct TASK *task_now(void);
 void task_add(struct TASK *task);
 void task_remove(struct TASK *task);
 void task_switchsub(void);
+void task_idle(void);
