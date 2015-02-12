@@ -7,6 +7,7 @@ void make_textbox8(struct SHEET *sht, int x0, int y0, int sx, int sy, int c);
 void make_window8(unsigned char *buf, int xsize, int ysize, char *title, char act);
 void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int c, int b, char *s, int l);
 void task_b_main(struct SHEET *sht_back);
+void console_task(struct SHEET *sheet);
 
 void HariMain(void)
 {
@@ -30,7 +31,7 @@ void HariMain(void)
 		0,   0,   0,   0,   0,   0,   0,   '7', '8', '9', '-','4',  '5', '6', '+', '1',
 		'2', '3', '0', '.'
 	};
-	struct TASK *task_a, *task_cons, *console_task;
+	struct TASK *task_a, *task_cons;
 	
 	init_gdtidt();
 	init_pic();
@@ -97,6 +98,7 @@ void HariMain(void)
     task_run(task_cons, 2, 2);  /* level=2, priority=2 */
 
 	sheet_slide(sht_back, 0, 0);
+	sheet_slide(sht_cons, 32, 4);
 	sheet_slide(sht_win, 64, 56);
 	sheet_slide(sht_mouse, mx, my);
 	sheet_updown(sht_back, 0);
