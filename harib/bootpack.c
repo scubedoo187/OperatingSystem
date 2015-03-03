@@ -24,7 +24,7 @@ void HariMain(void)
     struct SHEET *sht_back, *sht_mouse, *sht_win, *sht_win_b[3], *sht_cons;
     struct TIMER *timer;
     unsigned char *buf_back, buf_mouse[256], *buf_win, *buf_win_b, *buf_cons;
-    static char keytable[0x54] = {
+    static char keytable0[0x80] = {
         0,   0,   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',  '-', '=', 0,   0,
         'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']',  0,   0,   'A', 'S',
         'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', '\'','`', 0,  '\\', 'Z', 'X', 'C', 'V',
@@ -32,8 +32,18 @@ void HariMain(void)
         0,   0,   0,   0,   0,   0,   0,   '7', '8', '9', '-','4',  '5', '6', '+', '1',
         '2', '3', '0', '.'
     };
+    static char keytable1[0x80] = {
+        0,  0,  '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0,  0,
+        'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0, 0, 'A', 'S',
+        'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', 0, '|', 'Z', 'X', 'C', 'V',
+        'B', 'N', 'M', '<', '>', '?', 0,   '*', 0, ' ', 0,  0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0,  0,  0,  '7', '8', '9', '-', '4', '5', '6', '+', '1',
+        '2', '3', '0', '.', 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+    };
     struct TASK *task_a, *task_cons;
-    int key_to = 0;
+    int key_to = 0, key_shift = 0;
 
     init_gdtidt();
     init_pic();
@@ -124,17 +134,25 @@ void HariMain(void)
             if (256 <= i && i <= 511) {
                 sprintf(s, "%02X", i - 256);
                 putfonts8_asc_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
-                if (i < 0x54 + 256 && keytable[i - 256] != 0) {
+                if (i < 0x80 + 256) {
+                    if (key_shift == 0) {
+                        s[0] = keytable0[i - 256];
+                    } else {
+                        s[0] = keytable1[i - 256];
+                    }
+                } else {
+                    s[0] = 0;
+                }
+                if (s[0] != 0) {    // normal character
                     if (key_to == 0) { /* to task A */
                         if(cursor_x < 128) { // one character and one space
-                            s[0] = keytable[i - 256];
                             s[1] = 0;
                             putfonts8_asc_sht(sht_win, cursor_x, 28, COL8_000000,
                                     COL8_FFFFFF, s, 1);
                             cursor_x += 8;
                         }
                     } else { /* to console */
-                        fifo32_put(&task_cons->fifo, keytable[i - 256] + 256);
+                        fifo32_put(&task_cons->fifo, s[0] + 256);
                     }
                 }
                 if (i == 256 + 0x0e) { // back space
@@ -161,11 +179,22 @@ void HariMain(void)
                     sheet_refresh(sht_win, 0, 0, sht_win->bxsize, 21);
                     sheet_refresh(sht_cons, 0, 0, sht_cons->bxsize, 21);
                 }
+                if (i == 256 + 0x2a) {  // left shift on
+                    key_shift |= 1;
+                }
+                if (i == 256 + 0x36) {  // right shift on
+                    key_shift |= 2;
+                }
+                if (i == 256 + 0x22) {  // left shift off
+                    key_shift &= ~1;
+                }
+                if (i == 256 + 0xb6) {  // right shift off
+                    key_shift &= ~2;
+                }
                 boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 7, 43);
                 sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
-            } else if (512 <= i && i <= 767) {		/* 마우스 데이터 */
+            } else if (512 <= i && i <= 767) {
                 if (mouse_decode(&mdec, i - 512) != 0) {
-                    /* 데이터가 3바이트 모였으므로 표시 */
                     sprintf(s, "[lcr %4d %4d]", mdec.x, mdec.y);
                     if ((mdec.btn & 0x01) != 0) {
                         s[1] = 'L';
@@ -177,7 +206,6 @@ void HariMain(void)
                         s[2] = 'C';
                     }
                     putfonts8_asc_sht(sht_back, 32, 16, COL8_FFFFFF, COL8_008484, s, 15);
-                    /* 마우스 커서의 이동 */
                     mx += mdec.x;
                     my += mdec.y;
                     if (mx < 0) {
