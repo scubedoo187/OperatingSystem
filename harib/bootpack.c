@@ -185,7 +185,7 @@ void HariMain(void)
                 if (i == 256 + 0x36) {  // right shift on
                     key_shift |= 2;
                 }
-                if (i == 256 + 0x22) {  // left shift off
+                if (i == 256 + 0xaa) {  // left shift off
                     key_shift &= ~1;
                 }
                 if (i == 256 + 0xb6) {  // right shift off
