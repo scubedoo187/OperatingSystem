@@ -52,9 +52,9 @@ void HariMain(void)
     io_sti(); /* IDT/PIC의 초기화가 끝났으므로 CPU의 인터럽트 금지를 해제 */
     fifo32_init(&fifo, 128, fifobuf, 0);
     fifo32_init(&keycmd, 32, keycmd_buf, 0);
-    init_pit();				/* PIT 초기화 */
+    init_pit();
     init_keyboard(&fifo, 256);
-    enable_mouse(&fifo, 512, &mdec);	
+    enable_mouse(&fifo, 512, &mdec);
     io_out8(PIC0_IMR, 0xf8); /* PIT, PIC1와 키보드를 허가(11111001) */
     io_out8(PIC1_IMR, 0xef); /* 마우스를 허가(11101111) */
 
@@ -189,10 +189,14 @@ void HariMain(void)
                         key_to = 1;
                         make_wtitle8(buf_win, sht_win->bxsize, "task_a", 0);
                         make_wtitle8(buf_cons, sht_cons->bxsize, "console", 1);
+                        cursor_c = -1;
+                        boxfill8(sht_win->buf, sht_win->bxsize, COL8_FFFFFF,
+                                cursor_x, 28, cursor_x + 7, 43);
                     } else {
                         key_to = 0;
                         make_wtitle8(buf_win, sht_win->bxsize, "task_a", 1);
                         make_wtitle8(buf_cons, sht_cons->bxsize, "console", 0);
+                        cursor_c = COL8_000000;
                     }
                     sheet_refresh(sht_win, 0, 0, sht_win->bxsize, 21);
                     sheet_refresh(sht_cons, 0, 0, sht_cons->bxsize, 21);
@@ -231,9 +235,12 @@ void HariMain(void)
                     wait_KBC_sendready();
                     io_out8(PORT_KEYDAT, keycmd_wait);
                 }
-                boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 7, 43);
+                if (cursor_c >= 0) {
+                    boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x,
+                            28, cursor_x + 7, 43);
+                }
                 sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
-            } else if (512 <= i && i <= 767) {
+            } else if (512 <= i && i <= 767) {  // mouse data
                 if (mouse_decode(&mdec, i - 512) != 0) {
                     sprintf(s, "[lcr %4d %4d]", mdec.x, mdec.y);
                     if ((mdec.btn & 0x01) != 0) {
@@ -268,16 +275,21 @@ void HariMain(void)
                         sheet_slide(sht_win, mx - 80, my - 8);
                     }
                 }
-            } else if (i <= 1) {	/* 커서용 타이머 */
+            } else if (i <= 1) {    /* cursor timer */
                 if (i != 0) {
                     timer_init(timer, &fifo, 0);	/* 다음은 0을 */
-                    cursor_c = COL8_000000;
+                    if (cursor_c >= 0) {
+                        cursor_c = COL8_000000;
+                    }
                 } else {
                     timer_init(timer, &fifo, 1);	/* 다음은 1을 */
-                    cursor_c = COL8_FFFFFF;
+                    if (cursor_c >= 0) {
+                        cursor_c = COL8_FFFFFF;
+                    }
                 }
                 timer_settime(timer, 50);
-                boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x, 28, cursor_x + 7, 43);
+                boxfill8(sht_win->buf, sht_win->bxsize, cursor_c, cursor_x,
+                        28, cursor_x + 7, 43);
                 sheet_refresh(sht_win, cursor_x, 28, cursor_x + 8, 44);
             }
         }
