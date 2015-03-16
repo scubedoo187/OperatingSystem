@@ -1,4 +1,4 @@
-/* bootpack¿« ∏ﬁ¿Œ */
+/* bootpack.c */
 
 #include "bootpack.h"
 #include <stdio.h>
@@ -192,11 +192,13 @@ void HariMain(void)
                         cursor_c = -1;
                         boxfill8(sht_win->buf, sht_win->bxsize, COL8_FFFFFF,
                                 cursor_x, 28, cursor_x + 7, 43);
+                        fifo32_put(&task_cons->fifo, 2); // console cursor on
                     } else {
                         key_to = 0;
                         make_wtitle8(buf_win, sht_win->bxsize, "task_a", 1);
                         make_wtitle8(buf_cons, sht_cons->bxsize, "console", 0);
                         cursor_c = COL8_000000;
+                        fifo32_put(&task_cons->fifo, 3); // console cursor off
                     }
                     sheet_refresh(sht_win, 0, 0, sht_win->bxsize, 21);
                     sheet_refresh(sht_cons, 0, 0, sht_cons->bxsize, 21);
@@ -417,7 +419,7 @@ void console_task(struct SHEET *sheet)
 {
     struct TIMER *timer;
     struct TASK *task = task_now();
-    int i, fifobuf[128], cursor_x = 16, cursor_c = COL8_000000;
+    int i, fifobuf[128], cursor_x = 16, cursor_c = -1;
     char s[2];
 
     fifo32_init(&task->fifo, 128, fifobuf, task);
@@ -439,12 +441,24 @@ void console_task(struct SHEET *sheet)
             if (i <= 1) {
                 if (i != 0) {
                     timer_init(timer, &task->fifo, 0);
-                    cursor_c = COL8_FFFFFF;
+                    if (cursor_c >= 0) {
+                        cursor_c = COL8_FFFFFF;
+                    }
                 } else {
                     timer_init(timer, &task->fifo, 1);
-                    cursor_c = COL8_000000;
+                    if (cursor_c >= 0) {
+                        cursor_c = COL8_000000;
+                    }
                 }
                 timer_settime(timer, 50);
+            }
+            if (i == 2) {   //cursor on
+                cursor_c == COL8_FFFFFF;
+            }
+            if (i == 3) {   //cursor off
+                boxfill8(sheet->buf, sheet->bxsize, COL8_000000, cursor_x,
+                        28, cursor_x+7, 43);
+                cursor_c = -1;
             }
             if (256 <= i && i <= 511) { // key board data
                 if (i == 8 + 256) { // back space
@@ -463,8 +477,11 @@ void console_task(struct SHEET *sheet)
                     }
                 }
             }
-            boxfill8(sheet->buf, sheet->bxsize, cursor_c, cursor_x, 28,
-                    cursor_x + 7, 43);
+            // cursor remark
+            if (cursor_c >= 0) {
+                boxfill8(sheet->buf, sheet->bxsize, cursor_c, cursor_x, 28,
+                        cursor_x + 7, 43);
+            }
             sheet_refresh(sheet, cursor_x, 28, cursor_x + 8, 44);
         }
     }
