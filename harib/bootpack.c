@@ -184,6 +184,11 @@ void HariMain(void)
                         fifo32_put(&task_cons->fifo, 8 + 256);
                     }
                 }
+                if (i == 256 + 0x1c) {  // Enter
+                    if (key_to != 0) {  // to console
+                        fifo32_put(&task_cons->fifo, 10 + 256);
+                    }
+                }
                 if (i == 256 + 0x0f) { // tab
                     if(key_to == 0) {
                         key_to = 1;
@@ -419,7 +424,7 @@ void console_task(struct SHEET *sheet)
 {
     struct TIMER *timer;
     struct TASK *task = task_now();
-    int i, fifobuf[128], cursor_x = 16, cursor_c = -1;
+    int i, fifobuf[128], cursor_x = 16, cursor_y = 28, cursor_c = -1;
     char s[2];
 
     fifo32_init(&task->fifo, 128, fifobuf, task);
@@ -467,6 +472,17 @@ void console_task(struct SHEET *sheet)
                                 COL8_000000, " ", 1);
                         cursor_x -= 8;
                     }
+                } else if (i == 10 + 256) {
+                    // Enter
+                    if (cursor_y < 28 + 112) {  // remove cursor use space
+                        putfonts8_asc_sht(sheet, cursor_x, cursor_y,
+                                COL8_FFFFFF, COL8_000000, " ", 1);
+                        cursor_y += 16;
+                        // show prompt
+                        putfonts8_asc_sht(sheet, 8, cursor_y, COL8_FFFFFF,
+                                COL8_000000, ">", 1);
+                        cursor_x = 16;
+                    }
                 } else { // normal character
                     if (cursor_x < 240) {
                         s[0] = i - 256;
@@ -479,10 +495,11 @@ void console_task(struct SHEET *sheet)
             }
             // cursor remark
             if (cursor_c >= 0) {
-                boxfill8(sheet->buf, sheet->bxsize, cursor_c, cursor_x, 28,
-                        cursor_x + 7, 43);
+                boxfill8(sheet->buf, sheet->bxsize, cursor_c, cursor_x,
+                        cursor_y, cursor_x + 7, cursor_y + 15);
             }
-            sheet_refresh(sheet, cursor_x, 28, cursor_x + 8, 44);
+            sheet_refresh(sheet, cursor_x, cursor_y, cursor_x + 8,
+                    cursor_y + 16);
         }
     }
 }
