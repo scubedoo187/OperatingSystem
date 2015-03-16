@@ -158,7 +158,7 @@ void HariMain(void)
                 if ('A' <= s[0] && s[0] <= 'Z') {
                     if (((key_leds & 4) == 0 && key_shift == 0) ||
                         ((key_leds & 4) != 0 && key_shift != 0)) {
-                            s[0] += 0x20;   // Upper -> Lower char
+                            s[0] += 0x20;   // Upper -> Lower character
                         }
                 }
                 if (s[0] != 0) {    // normal character
@@ -438,14 +438,14 @@ void console_task(struct SHEET *sheet)
         } else {
             i = fifo32_get(&task->fifo);
             io_sti();
-            if (i <= 1) {
+            if (i <= 1) {   // cursor's timer
                 if (i != 0) {
-                    timer_init(timer, &task->fifo, 0);
+                    timer_init(timer, &task->fifo, 0);  // next 0
                     if (cursor_c >= 0) {
                         cursor_c = COL8_FFFFFF;
                     }
                 } else {
-                    timer_init(timer, &task->fifo, 1);
+                    timer_init(timer, &task->fifo, 1);  // next 1
                     if (cursor_c >= 0) {
                         cursor_c = COL8_000000;
                     }
@@ -453,11 +453,11 @@ void console_task(struct SHEET *sheet)
                 timer_settime(timer, 50);
             }
             if (i == 2) {   //cursor on
-                cursor_c == COL8_FFFFFF;
+                cursor_c = COL8_FFFFFF;
             }
             if (i == 3) {   //cursor off
                 boxfill8(sheet->buf, sheet->bxsize, COL8_000000, cursor_x,
-                        28, cursor_x+7, 43);
+                        28, cursor_x + 7, 43);
                 cursor_c = -1;
             }
             if (256 <= i && i <= 511) { // key board data
