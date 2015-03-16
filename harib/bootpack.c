@@ -468,8 +468,8 @@ void console_task(struct SHEET *sheet)
             if (256 <= i && i <= 511) { // key board data
                 if (i == 8 + 256) { // back space
                     if (cursor_x > 16) {
-                        putfonts8_asc_sht(sheet, cursor_x, 28, COL8_FFFFFF,
-                                COL8_000000, " ", 1);
+                        putfonts8_asc_sht(sheet, cursor_x, cursor_y,
+                                COL8_FFFFFF, COL8_000000, " ", 1);
                         cursor_x -= 8;
                     }
                 } else if (i == 10 + 256) {
@@ -487,7 +487,7 @@ void console_task(struct SHEET *sheet)
                     if (cursor_x < 240) {
                         s[0] = i - 256;
                         s[1] = 0;
-                        putfonts8_asc_sht(sheet, cursor_x, 28, COL8_FFFFFF,
+                        putfonts8_asc_sht(sheet, cursor_x, cursor_y, COL8_FFFFFF,
                                 COL8_000000, s, 1);
                         cursor_x += 8;
                     }
