@@ -462,7 +462,7 @@ void console_task(struct SHEET *sheet)
             }
             if (i == 3) {   //cursor off
                 boxfill8(sheet->buf, sheet->bxsize, COL8_000000, cursor_x,
-                        28, cursor_x + 7, 43);
+                        cursor_y, cursor_x + 7, cursor_y + 15);
                 cursor_c = -1;
             }
             if (256 <= i && i <= 511) { // key board data
